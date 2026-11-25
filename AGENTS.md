@@ -5,7 +5,7 @@ DietWise Renderer is a Node.js + TypeScript service that renders and cleans reci
 Core runtime stack: Express + Playwright (Chromium).
 
 ## Tech and Entry Points
-- Runtime: Node 20, ESM (`"type": "module"`)
+- Runtime: Node 26, ESM (`"type": "module"`)
 - Server entry: `src/server.ts`
 - App wiring: `src/app.ts`
 - Rendering route: `src/routes/render.ts`
