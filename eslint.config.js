@@ -2,7 +2,6 @@ import js from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import prettierRecommendedConfig from 'eslint-plugin-prettier/recommended';
-import importPlugin from 'eslint-plugin-import';
 
 export default defineConfig(
 	{ ignores: ['dist'] },
@@ -11,14 +10,6 @@ export default defineConfig(
 		files: ['**/*.{ts,tsx}'],
 		languageOptions: {
 			ecmaVersion: 2020,
-		},
-		plugins: {
-			import: importPlugin,
-		},
-		settings: {
-			'import/resolver': {
-				typescript: true,
-			},
 		},
 		rules: {
 			'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
@@ -30,16 +21,6 @@ export default defineConfig(
 					argsIgnorePattern: '^_',
 					varsIgnorePattern: '^_',
 					caughtErrorsIgnorePattern: '^_',
-				},
-			],
-			'import/order': [
-				'off',
-				{
-//					'newlines-between': 'always',
-//					alphabetize: {
-//						order: 'asc',
-//						caseInsensitive: true,
-//					},
 				},
 			],
 		},

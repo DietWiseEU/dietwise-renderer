@@ -27,6 +27,14 @@ docker run --rm -p 3000:3000 dietwise-renderer
 
 ## Testing
 
+### Try it out by hand
+
+With the renderer running at localhost:3000, try e.g.:
+
+```bash
+curl -i -X POST http://localhost:3000/render -H "Content-Type: application/json" -d '{"url":"https://my-recipe-site.com/1234","simplify":true,"includeJsonLdRecipes":true,"timeout":30000,"includeScreenshot":false,"outputMinimalText":true}'
+```
+
 ### The control file
 
 Located under the folder `testdata/`, `_control.csv` contains the test data instructions.
