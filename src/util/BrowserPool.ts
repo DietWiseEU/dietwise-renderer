@@ -71,6 +71,10 @@ export class BrowserPool {
 	}
 
 	async shutdown() {
+		// Mark every browser dead first, so the disconnect handler does not replace the ones closed here
+		for (const entry of this.browsers) {
+			entry.alive = false;
+		}
 		await Promise.all(
 			this.browsers.map((b, index) =>
 				b.browser.close().catch((e) => console.error(`Error closing browser ${index}`, e)),

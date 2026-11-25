@@ -8,6 +8,7 @@ import type { Semaphore } from 'app/util/Semaphore.js';
 import type { Config } from 'app/model.js';
 import type { BrowserContext, Page } from 'playwright';
 import { withHardTimeout } from 'app/util/withHardTimeout.js';
+import { hardenPage } from 'app/routes/hardenPage.js';
 import { cleanHtmlForLLM, PageCleaningResult, RECIPE_MINIMAL_TAGS } from 'app/cleaner/cleanHtmlForLLM.js';
 import { nodeDomAdapter } from 'app/cleaner/nodeDomAdapter.js';
 import { extractJsonLdRecipesFromString, Recipe } from 'app/cleaner/extractJsonLdRecipes.js';
@@ -144,103 +145,7 @@ export function renderRouter(browserPool: BrowserPool, semaphore: Semaphore, con
 					},
 				});
 				await context.clearPermissions();
-				await context.addInitScript(() => {
-					const clearBrowserState = () => {
-						try {
-							window.localStorage.clear();
-						} catch (_) {
-							// Intentionally blank
-						}
-						try {
-							window.sessionStorage.clear();
-						} catch (_) {
-							// Intentionally blank
-						}
-						void indexedDB
-							.databases?.()
-							.then((databases) =>
-								Promise.all(
-									databases
-										.map((database) => database.name)
-										.filter((name): name is string => typeof name === 'string')
-										.map((name) => indexedDB.deleteDatabase(name)),
-								),
-							)
-							.catch(() => undefined);
-						void caches
-							?.keys()
-							.then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
-							.catch(() => undefined);
-					};
-
-					clearBrowserState();
-					window.addEventListener('beforeunload', clearBrowserState);
-
-					const denied = 'denied';
-					const notAllowed = (name: string) =>
-						Object.assign(new Error(`${name} is disabled in this browser context`), {
-							name: 'NotAllowedError',
-						});
-
-					if ('Notification' in window) {
-						Object.defineProperty(Notification, 'permission', {
-							configurable: true,
-							get: () => denied,
-						});
-						Notification.requestPermission = async () => denied;
-					}
-
-					if ('geolocation' in navigator) {
-						const geolocationError = () => {
-							throw notAllowed('Geolocation');
-						};
-						navigator.geolocation.getCurrentPosition = ((success, error) => {
-							error?.({
-								code: 1,
-								message: 'Geolocation is disabled in this browser context',
-								PERMISSION_DENIED: 1,
-								POSITION_UNAVAILABLE: 2,
-								TIMEOUT: 3,
-							});
-							if (!error) geolocationError();
-						}) as Geolocation['getCurrentPosition'];
-						navigator.geolocation.watchPosition = ((success, error) => {
-							error?.({
-								code: 1,
-								message: 'Geolocation is disabled in this browser context',
-								PERMISSION_DENIED: 1,
-								POSITION_UNAVAILABLE: 2,
-								TIMEOUT: 3,
-							});
-							if (!error) geolocationError();
-							return 0;
-						}) as Geolocation['watchPosition'];
-					}
-
-					if ('mediaDevices' in navigator && navigator.mediaDevices) {
-						navigator.mediaDevices.getUserMedia = async () => {
-							throw notAllowed('getUserMedia');
-						};
-						navigator.mediaDevices.getDisplayMedia = async () => {
-							throw notAllowed('getDisplayMedia');
-						};
-					}
-
-					if ('clipboard' in navigator && navigator.clipboard) {
-						navigator.clipboard.read = async () => {
-							throw notAllowed('Clipboard read');
-						};
-						navigator.clipboard.readText = async () => {
-							throw notAllowed('Clipboard readText');
-						};
-						navigator.clipboard.write = async () => {
-							throw notAllowed('Clipboard write');
-						};
-						navigator.clipboard.writeText = async () => {
-							throw notAllowed('Clipboard writeText');
-						};
-					}
-				});
+				await context.addInitScript(hardenPage);
 				const cachedLookup = createCachedLookup();
 				await context.route('**/*', async (route) => {
 					const request = route.request();
@@ -279,7 +184,7 @@ export function renderRouter(browserPool: BrowserPool, semaphore: Semaphore, con
 					console.log(`[PAGE LOG] [${url}] ${msg.type()}: ${msg.text()}`);
 				});
 				page.on('pageerror', (err) => {
-					console.error('[PAGE ERROR] [${url}]', err);
+					console.error(`[PAGE ERROR] [${url}]`, err);
 				});
 				const response = await page.goto(renderTarget.url, {
 					waitUntil: 'domcontentloaded',

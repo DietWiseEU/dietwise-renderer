@@ -14,6 +14,8 @@ export default defineConfig(
 		rules: {
 			'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
 			'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+			// Catch `${...}` placeholders written in plain quotes, where they are not interpolated
+			'no-template-curly-in-string': 'error',
 			// Allow unused variables if they are prefixed with _
 			'@typescript-eslint/no-unused-vars': [
 				'error',
