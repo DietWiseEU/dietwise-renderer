@@ -42,6 +42,26 @@ test('BrowserPool replaces a browser that disconnects unexpectedly', async () =>
 	}
 });
 
+test('BrowserPool closes the browser it is asked to replace', async () => {
+	const pool = new BrowserPool(1);
+	await pool.init();
+	const consoleErrors = captureConsoleErrors();
+	try {
+		const original = pool.acquire();
+
+		await pool.replace(original);
+
+		const replacement = pool.acquire();
+		expect(replacement).not.toBe(original);
+		expect(replacement.isConnected()).toBe(true);
+		expect(original.isConnected()).toBe(false);
+		expect(consoleErrors.messages).toEqual([]);
+	} finally {
+		consoleErrors.restore();
+		await pool.shutdown();
+	}
+});
+
 test('BrowserPool does not replace the browsers it closes on shutdown', async () => {
 	const pool = new BrowserPool(1);
 	await pool.init();

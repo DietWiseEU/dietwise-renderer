@@ -23,6 +23,7 @@ Default runtime envs used by server:
 - `BROWSER_COUNT` (default `2`)
 - `MAX_CONCURRENT_JOBS` (default `4`)
 - `DW_RENDERER_TEST_DIR` (optional local HTML fixture folder)
+- `DW_RENDERER_DEBUG_DIR` (optional folder for per-render HAR files and hard-timeout screenshots; nothing is saved when unset)
 
 ## Testing and Validation
 - Unit tests: `npm run test:unit`

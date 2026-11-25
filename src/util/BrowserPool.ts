@@ -34,10 +34,12 @@ export class BrowserPool {
 	}
 
 	async replace(dead: Browser) {
-		const index = this.browsers.findIndex((b) => b.browser === dead);
-		if (index === -1) return;
-		const entry: PooledBrowser = await this.launch();
-		this.browsers[index] = entry;
+		const entry = this.browsers.find((b) => b.browser === dead);
+		if (!entry?.alive) return;
+		// Mark it dead first, so closing it does not make the disconnect handler replace it a second time
+		entry.alive = false;
+		await dead.close().catch((e) => console.error('Error closing replaced browser', e));
+		await this.replacePooledBrowser(entry);
 	}
 
 	private async replacePooledBrowser(dead: PooledBrowser) {

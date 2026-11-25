@@ -4,9 +4,11 @@ export async function withHardTimeout<T>(
 	onTimeout: () => Promise<void>,
 ): Promise<T> {
 	let timeoutHandle: NodeJS.Timeout;
+	let timedOut = false;
 
 	const timeoutPromise = new Promise<never>((_, reject) => {
 		timeoutHandle = setTimeout(async () => {
+			timedOut = true;
 			try {
 				await onTimeout();
 			} catch (e) {
@@ -18,8 +20,14 @@ export async function withHardTimeout<T>(
 	});
 
 	try {
-		return await Promise.race([task, timeoutPromise]);
+		const result = await Promise.race([task, timeoutPromise]);
+		if (!timedOut) return result;
+	} catch (err) {
+		if (!timedOut) throw err;
 	} finally {
 		clearTimeout(timeoutHandle!);
 	}
+	// The cleanup typically makes the task settle early (e.g. by closing its page); whatever the task did,
+	// report the timeout, and only once the cleanup has finished
+	return timeoutPromise;
 }

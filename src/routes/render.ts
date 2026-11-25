@@ -9,6 +9,7 @@ import type { Config } from 'app/model.js';
 import type { BrowserContext, Page } from 'playwright';
 import { withHardTimeout } from 'app/util/withHardTimeout.js';
 import { hardenPage } from 'app/routes/hardenPage.js';
+import { debugArtifactPaths } from 'app/routes/debugArtifacts.js';
 import { cleanHtmlForLLM, PageCleaningResult, RECIPE_MINIMAL_TAGS } from 'app/cleaner/cleanHtmlForLLM.js';
 import { nodeDomAdapter } from 'app/cleaner/nodeDomAdapter.js';
 import { extractJsonLdRecipesFromString, Recipe } from 'app/cleaner/extractJsonLdRecipes.js';
@@ -129,6 +130,7 @@ export function renderRouter(browserPool: BrowserPool, semaphore: Semaphore, con
 
 			url = renderTarget.url;
 			const browser = browserPool.acquire();
+			const debugPaths = debugArtifactPaths(config.debugDir, now);
 
 			const task: Promise<RenderResponse> = (async () => {
 				context = await browser.newContext({
@@ -139,10 +141,12 @@ export function renderRouter(browserPool: BrowserPool, semaphore: Semaphore, con
 					},
 					serviceWorkers: 'block',
 					viewport: normalizeViewport(renderRequest.viewport),
-					recordHar: {
-						path: `/tmp/dietwise-renderer/${now}.har`,
-						content: 'embed',
-					},
+					recordHar: debugPaths
+						? {
+								path: debugPaths.har,
+								content: 'embed',
+							}
+						: undefined,
 				});
 				await context.clearPermissions();
 				await context.addInitScript(hardenPage);
@@ -209,9 +213,9 @@ export function renderRouter(browserPool: BrowserPool, semaphore: Semaphore, con
 			const hardTimeout: () => Promise<void> = async () => {
 				// Hard kill path
 				try {
-					if (page) {
+					if (page && debugPaths) {
 						await page.screenshot({
-							path: `/tmp/dietwise-renderer/${now}.png`,
+							path: debugPaths.screenshot,
 							fullPage: true,
 						});
 					}

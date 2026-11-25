@@ -25,6 +25,27 @@ Run (remove the container when finished; that's OK because the container is stat
 docker run --rm -p 3000:3000 dietwise-renderer
 ```
 
+### Debugging renders
+
+Set `DW_RENDERER_DEBUG_DIR` to a folder to keep debugging artifacts of every remote render there, named after the
+render's timestamp:
+
+- `<timestamp>.har`: every request the page made, with the response bodies embedded (expect 5-15 MB per recipe page)
+- `<timestamp>.png`: a full-page screenshot, only when the render hits the hard timeout
+
+Nothing is cleaned up automatically, so leave it unset unless you are investigating something. Example:
+
+```bash
+DW_RENDERER_DEBUG_DIR=/tmp/dietwise-renderer npm run dev
+```
+
+With Docker, mount a host folder (the files will be owned by root, the container's user):
+
+```bash
+mkdir -p debug
+docker run --rm -p 3000:3000 -e DW_RENDERER_DEBUG_DIR=/debug -v "$PWD/debug:/debug" dietwise-renderer
+```
+
 ## Testing
 
 ### Try it out by hand
